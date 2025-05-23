@@ -3,153 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ami Studio</title>
+    <title>MiniLLM</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
         }
-
-        header {
-            background-color: #333;
-            color: #fff;
-            padding: 1em;
-            text-align: center;
+        #chat-container {
+            width: 500px;
+            height: 600px;
+            border: 1px solid #ccc;
+            padding: 20px;
+            overflow-y: auto;
         }
-
-        main {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 2em;
-        }
-
-       .audio-container {
-            margin-bottom: 2em;
-        }
-
-        #audio-player {
+        #input-field {
             width: 100%;
+            height: 40px;
+            padding: 10px;
+            border: 1px solid #ccc;
         }
-
-        #play-pause-button, #stop-button, #record-button {
-            margin: 0.5em;
-            padding: 0.5em 1em;
-            border: none;
-            border-radius: 0.25em;
+        #send-button {
+            width: 100px;
+            height: 40px;
             background-color: #4CAF50;
             color: #fff;
-            cursor: pointer;
-        }
-
-        #play-pause-button:hover, #stop-button:hover, #record-button:hover {
-            background-color: #3e8e41;
-        }
-
-       .editor-container {
-            margin-bottom: 2em;
-        }
-
-        #waveform-canvas {
-            border: 1px solid #ddd;
-        }
-
-        #editor-tools {
-            margin-top: 1em;
-        }
-
-        #zoom-in-button, #zoom-out-button, #pan-button {
-            margin: 0.5em;
-            padding: 0.5em 1em;
             border: none;
-            border-radius: 0.25em;
-            background-color: #4CAF50;
-            color: #fff;
+            border-radius: 5px;
             cursor: pointer;
-        }
-
-        #zoom-in-button:hover, #zoom-out-button:hover, #pan-button:hover {
-            background-color: #3e8e41;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Ami Studio</h1>
-    </header>
-    <main>
-        <section class="audio-container">
-            <audio id="audio-player" controls>
-                <source src="audio-example.mp3" type="audio/mp3">
-                Your browser does not support the audio element.
-            </audio>
-            <button id="play-pause-button">Play/Pause</button>
-            <button id="stop-button">Stop</button>
-            <button id="record-button">Record</button>
-        </section>
-        <section class="editor-container">
-            <canvas id="waveform-canvas" width="800" height="200"></canvas>
-            <div id="editor-tools">
-                <button id="zoom-in-button">Zoom In</button>
-                <button id="zoom-out-button">Zoom Out</button>
-                <button id="pan-button">Pan</button>
-            </div>
-        </section>
-    </main>
-    <script>
-        const audioPlayer = document.getElementById('audio-player');
-        const playPauseButton = document.getElementById('play-pause-button');
-        const stopButton = document.getElementById('stop-button');
-        const recordButton = document.getElementById('record-button');
-        const waveformCanvas = document.getElementById('waveform-canvas');
-        const zoomInButton = document.getElementById('zoom-in-button');
-        const zoomOutButton = document.getElementById('zoom-out-button');
-        const panButton = document.getElementById('pan-button');
+    <h1>MiniLLM</h1>
+    <div id="chat-container">
+        <div id="chat-log"></div>
+    </div>
+    <input id="input-field" type="text" placeholder="Type a message...">
+    <button id="send-button">Send</button>
 
-        // Add event listeners
-        playPauseButton.addEventListener('click', () => {
-            if (audioPlayer.paused) {
-                audioPlayer.play();
-            } else {
-                audioPlayer.pause();
+    <script>
+        const chatLog = document.getElementById('chat-log');
+        const inputField = document.getElementById('input-field');
+        const sendButton = document.getElementById('send-button');
+
+        let knowledgeBase = {};
+
+        sendButton.addEventListener('click', () => {
+            const userInput = inputField.value.trim();
+            if (userInput) {
+                const response = generateResponse(userInput);
+                chatLog.innerHTML += `<div><b>You:</b> ${userInput}</div>`;
+                chatLog.innerHTML += `<div><b>MiniLLM:</b> ${response}</div>`;
+                inputField.value = '';
             }
         });
 
-        stopButton.addEventListener('click', () => {
-            audioPlayer.pause();
-            audioPlayer.currentTime = 0;
-        });
+        function generateResponse(input) {
+            if (knowledgeBase[input]) {
+                return knowledgeBase[input];
+            } else {
+                return fetch(`https://api.wikipedia.org/w/api.php?action=opensearch&search=${input}&limit=1&format=json`)
+                   .then(response => response.json())
+                   .then(data => {
+                        if (data[1].length > 0) {
+                            const title = data[1][0];
+                            return fetch(`https://api.wikipedia.org/w/api.php?action=parse&page=${title}&format=json`)
+                               .then(response => response.json())
+                               .then(data => {
+                                    const text = data.parse.text['*'];
+                                    knowledgeBase[input] = text;
+                                    return text;
+                                });
+                        } else {
+                            return 'I couldn\'t find any information on that topic.';
+                        }
+                    });
+            }
+        }
 
-        recordButton.addEventListener('click', () => {
-            // TO DO: Implement recording functionality
-            console.log('Record button clicked');
-        });
-
-        zoomInButton.addEventListener('click', () => {
-            // TO DO: Implement zoom in functionality
-            console.log('Zoom in button clicked');
-        });
-
-        zoomOutButton.addEventListener('click', () => {
-            // TO DO: Implement zoom out functionality
-            console.log('Zoom out button clicked');
-        });
-
-        panButton.addEventListener('click', () => {
-            // TO DO: Implement pan functionality
-            console.log('Pan button clicked');
-        });
-
-        // Draw a simple waveform on the canvas
-        const ctx = waveformCanvas.getContext('2d');
-        ctx.beginPath();
-        ctx.moveTo(0, 100);
-        ctx.lineTo(100, 50);
-        ctx.lineTo(200, 150);
-        ctx.lineTo(300, 50);
-        ctx.lineTo(400, 100);
-        ctx.stroke();
+        // Initialize the knowledge base with some basic information
+        fetch('https://api.wikipedia.org/w/api.php?action=opensearch&search=hello&limit=1&format=json')
+           .then(response => response.json())
+           .then(data => {
+                if (data[1].length > 0) {
+                    const title = data[1][0];
+                    fetch(`https://api.wikipedia.org/w/api.php?action=parse&page=${title}&format=json`)
+                       .then(response => response.json())
+                       .then(data => {
+                            const text = data.parse.text['*'];
+                            knowledgeBase['hello'] = text;
+                        });
+                }
+            });
     </script>
 </body>
 </html>
