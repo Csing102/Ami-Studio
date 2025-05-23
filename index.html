@@ -47,53 +47,63 @@
 
         let knowledgeBase = {};
 
-        sendButton.addEventListener('click', () => {
+        sendButton.addEventListener('click', async () => {
             const userInput = inputField.value.trim();
             if (userInput) {
-                const response = generateResponse(userInput);
+                const response = await generateResponse(userInput);
                 chatLog.innerHTML += `<div><b>You:</b> ${userInput}</div>`;
                 chatLog.innerHTML += `<div><b>MiniLLM:</b> ${response}</div>`;
                 inputField.value = '';
             }
         });
 
-        function generateResponse(input) {
+        async function generateResponse(input) {
             if (knowledgeBase[input]) {
                 return knowledgeBase[input];
             } else {
-                return fetch(`https://api.duckduckgo.com/?q=${input}&format=json`)
-                  .then(response => response.json())
-                  .then(data => {
-                        if (data.RelatedTopics) {
-                            const topic = data.RelatedTopics[0].Text;
-                            return fetch(`https://api.wikipedia.org/w/api.php?action=parse&page=${topic}&format=json`)
-                              .then(response => response.json())
-                              .then(data => {
-                                    const text = data.parse.text['*'];
-                                    knowledgeBase[input] = text;
-                                    return text;
-                                });
+                try {
+                    const response = await fetch(`https://api.duckduckgo.com/?q=${input}&format=json`);
+                    const data = await response.json();
+                    if (data.RelatedTopics) {
+                        const topic = data.RelatedTopics[0].Text;
+                        const wikiResponse = await fetch(`https://api.wikipedia.org/w/api.php?action=parse&page=${topic}&format=json`);
+                        const wikiData = await wikiResponse.json();
+                        if (wikiData.parse) {
+                            const text = wikiData.parse.text['*'];
+                            knowledgeBase[input] = text;
+                            return text;
                         } else {
                             return 'I couldn\'t find any information on that topic.';
                         }
-                    });
+                    } else {
+                        return 'I couldn\'t find any information on that topic.';
+                    }
+                } catch (error) {
+                    return 'An error occurred while processing your request.';
+                }
             }
         }
 
         // Initialize the knowledge base with some basic information
-        fetch('https://api.duckduckgo.com/?q=hello&format=json')
-          .then(response => response.json())
-          .then(data => {
+        async function initializeKnowledgeBase() {
+            try {
+                const response = await fetch('https://api.duckduckgo.com/?q=hello&format=json');
+                const data = await response.json();
                 if (data.RelatedTopics) {
                     const topic = data.RelatedTopics[0].Text;
-                    fetch(`https://api.wikipedia.org/w/api.php?action=parse&page=${topic}&format=json`)
-                      .then(response => response.json())
-                      .then(data => {
-                            const text = data.parse.text['*'];
-                            knowledgeBase['hello'] = text;
-                        });
+                    const wikiResponse = await fetch(`https://api.wikipedia.org/w/api.php?action=parse&page=${topic}&format=json`);
+                    const wikiData = await wikiResponse.json();
+                    if (wikiData.parse) {
+                        const text = wikiData.parse.text['*'];
+                        knowledgeBase['hello'] = text;
+                    }
                 }
-            });
+            } catch (error) {
+                console.error('Error initializing knowledge base:', error);
+            }
+        }
+
+        initializeKnowledgeBase();
     </script>
 </body>
 </html>
