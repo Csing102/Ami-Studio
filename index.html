@@ -50,10 +50,14 @@
         sendButton.addEventListener('click', async () => {
             const userInput = inputField.value.trim();
             if (userInput) {
-                const response = await generateResponse(userInput);
-                chatLog.innerHTML += `<div><b>You:</b> ${userInput}</div>`;
-                chatLog.innerHTML += `<div><b>MiniLLM:</b> ${response}</div>`;
-                inputField.value = '';
+                try {
+                    const response = await generateResponse(userInput);
+                    chatLog.innerHTML += `<div><b>You:</b> ${userInput}</div>`;
+                    chatLog.innerHTML += `<div><b>MiniLLM:</b> ${response}</div>`;
+                    inputField.value = '';
+                } catch (error) {
+                    chatLog.innerHTML += `<div><b>Error:</b> ${error.message}</div>`;
+                }
             }
         });
 
@@ -73,13 +77,13 @@
                             knowledgeBase[input] = text;
                             return text;
                         } else {
-                            return 'I couldn\'t find any information on that topic.';
+                            throw new Error('Failed to retrieve Wikipedia data');
                         }
                     } else {
-                        return 'I couldn\'t find any information on that topic.';
+                        throw new Error('Failed to retrieve DuckDuckGo data');
                     }
                 } catch (error) {
-                    return 'An error occurred while processing your request.';
+                    throw new Error(`Failed to generate response: ${error.message}`);
                 }
             }
         }
