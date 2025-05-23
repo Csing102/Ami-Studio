@@ -61,14 +61,14 @@
             if (knowledgeBase[input]) {
                 return knowledgeBase[input];
             } else {
-                return fetch(`https://api.wikipedia.org/w/api.php?action=opensearch&search=${input}&limit=1&format=json`)
-                   .then(response => response.json())
-                   .then(data => {
-                        if (data[1].length > 0) {
-                            const title = data[1][0];
-                            return fetch(`https://api.wikipedia.org/w/api.php?action=parse&page=${title}&format=json`)
-                               .then(response => response.json())
-                               .then(data => {
+                return fetch(`https://api.duckduckgo.com/?q=${input}&format=json`)
+                  .then(response => response.json())
+                  .then(data => {
+                        if (data.RelatedTopics) {
+                            const topic = data.RelatedTopics[0].Text;
+                            return fetch(`https://api.wikipedia.org/w/api.php?action=parse&page=${topic}&format=json`)
+                              .then(response => response.json())
+                              .then(data => {
                                     const text = data.parse.text['*'];
                                     knowledgeBase[input] = text;
                                     return text;
@@ -81,14 +81,14 @@
         }
 
         // Initialize the knowledge base with some basic information
-        fetch('https://api.wikipedia.org/w/api.php?action=opensearch&search=hello&limit=1&format=json')
-           .then(response => response.json())
-           .then(data => {
-                if (data[1].length > 0) {
-                    const title = data[1][0];
-                    fetch(`https://api.wikipedia.org/w/api.php?action=parse&page=${title}&format=json`)
-                       .then(response => response.json())
-                       .then(data => {
+        fetch('https://api.duckduckgo.com/?q=hello&format=json')
+          .then(response => response.json())
+          .then(data => {
+                if (data.RelatedTopics) {
+                    const topic = data.RelatedTopics[0].Text;
+                    fetch(`https://api.wikipedia.org/w/api.php?action=parse&page=${topic}&format=json`)
+                      .then(response => response.json())
+                      .then(data => {
                             const text = data.parse.text['*'];
                             knowledgeBase['hello'] = text;
                         });
