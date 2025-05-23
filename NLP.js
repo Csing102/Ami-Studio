@@ -19,6 +19,14 @@ class NLP {
   containsWord(word) {
     return this.vocabulary[word] === true;
   }
+
+  train(data) {
+    const tokens = this.tokenize(data);
+    tokens.forEach(token => {
+      this.addWord(token);
+    });
+    return { message: 'Training complete' };
+  }
 }
 
 class Tokenizer {
@@ -27,12 +35,4 @@ class Tokenizer {
   }
 }
 
-// Usage
-const nlp = new NLP();
-nlp.addWord('hello');
-nlp.addWord('world');
-console.log(nlp.containsWord('hello')); // true
-console.log(nlp.containsWord('world')); // true
-console.log(nlp.containsWord('foo')); // false
-const tokens = nlp.tokenize('hello world');
-console.log(tokens); // ['hello', 'world']
+module.exports = NLP;
